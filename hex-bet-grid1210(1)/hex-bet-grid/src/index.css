@@ -1,0 +1,227 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 4%;
+    --foreground: 180 100% 95%;
+
+    --card: 0 0% 6%;
+    --card-foreground: 180 100% 95%;
+
+    --popover: 0 0% 6%;
+    --popover-foreground: 180 100% 95%;
+
+    --primary: 172 100% 57%;
+    --primary-foreground: 0 0% 4%;
+
+    --secondary: 263 84% 58%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 60%;
+
+    --accent: 75 100% 50%;
+    --accent-foreground: 0 0% 4%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 172 50% 20%;
+    --input: 0 0% 12%;
+    --ring: 172 100% 57%;
+
+    --radius: 0.75rem;
+
+    /* Custom tokens */
+    --neon-glow: 0 0 20px hsl(172 100% 57% / 0.5);
+    --neon-glow-strong: 0 0 40px hsl(172 100% 57% / 0.7);
+    --purple-glow: 0 0 30px hsl(263 84% 58% / 0.5);
+    --lime-glow: 0 0 20px hsl(75 100% 50% / 0.5);
+    
+    --gradient-primary: linear-gradient(135deg, hsl(172 100% 57%), hsl(172 100% 40%));
+    --gradient-secondary: linear-gradient(135deg, hsl(263 84% 58%), hsl(280 84% 65%));
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 8%), hsl(0 0% 5%));
+    --gradient-hero: radial-gradient(ellipse at top, hsl(172 100% 57% / 0.1), transparent 50%);
+    
+    --sidebar-background: 0 0% 6%;
+    --sidebar-foreground: 180 100% 95%;
+    --sidebar-primary: 172 100% 57%;
+    --sidebar-primary-foreground: 0 0% 4%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 180 100% 95%;
+    --sidebar-border: 172 50% 20%;
+    --sidebar-ring: 172 100% 57%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Orbitron', sans-serif;
+  }
+}
+
+@layer components {
+  .neon-border {
+    @apply border border-primary/50;
+    box-shadow: var(--neon-glow), inset 0 0 20px hsl(172 100% 57% / 0.05);
+  }
+
+  .neon-text {
+    text-shadow: var(--neon-glow);
+  }
+
+  .purple-glow {
+    box-shadow: var(--purple-glow);
+  }
+
+  .lime-glow {
+    box-shadow: var(--lime-glow);
+  }
+
+  .card-gradient {
+    background: var(--gradient-card);
+  }
+
+  .hero-gradient {
+    background: var(--gradient-hero);
+  }
+
+  .glass-effect {
+    @apply bg-card/80 backdrop-blur-xl;
+  }
+}
+
+@layer utilities {
+  .animate-pulse-neon {
+    animation: pulse-neon 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  .animate-count {
+    animation: count-up 0.5s ease-out;
+  }
+
+  .animate-winner-flash {
+    animation: winner-flash 0.5s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.3s ease-out;
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.3s ease-out;
+  }
+}
+
+@keyframes pulse-neon {
+  0%, 100% {
+    box-shadow: var(--neon-glow);
+  }
+  50% {
+    box-shadow: var(--neon-glow-strong);
+  }
+}
+
+@keyframes glow {
+  from {
+    text-shadow: 0 0 10px hsl(172 100% 57% / 0.5);
+  }
+  to {
+    text-shadow: 0 0 20px hsl(172 100% 57% / 0.8), 0 0 30px hsl(172 100% 57% / 0.5);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes count-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes winner-flash {
+  0% {
+    transform: scale(1);
+    box-shadow: var(--neon-glow);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 60px hsl(75 100% 50% / 0.8);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: var(--lime-glow);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(0 0% 6%);
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(172 100% 57% / 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(172 100% 57% / 0.5);
+}

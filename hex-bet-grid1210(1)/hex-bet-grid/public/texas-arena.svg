@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 768">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#a78bfa"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="12" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <linearGradient id="textGrad" x1="0%" y1="50%" x2="100%" y2="50%">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#a78bfa"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="100%" height="100%" fill="#0b1d20"/>
+
+  <g filter="url(#glow)">
+    <path d="M120 500 C 200 360 320 320 440 360 C 520 386 600 440 680 470 C 640 486 600 500 560 510 C 420 540 280 540 140 520 Z" fill="url(#grad)"/>
+
+    <g transform="translate(420,360)">
+      <path d="M0 0 C 60 -30 120 -30 180 0 C 140 10 100 25 60 40 C 20 55 -20 70 -60 80 C -40 50 -20 20 0 0 Z" fill="url(#grad)" opacity="0.9"/>
+      <path d="M30 -10 C 90 -35 150 -35 210 -5 C 170 5 130 20 90 35 C 50 50 10 65 -30 75 C -10 45 10 15 30 -10 Z" fill="url(#grad)" opacity="0.7"/>
+      <path d="M60 -25 C 120 -50 180 -50 240 -20 C 200 -10 160 5 120 20 C 80 35 40 50 0 60 C 20 30 40 0 60 -25 Z" fill="url(#grad)" opacity="0.5"/>
+    </g>
+
+    <!-- Club suit marks -->
+    <g fill="#062c2f">
+      <path d="M340 400 c0 -25 20 -45 45 -45 s45 20 45 45 s-20 45 -45 45 h-10 v20 h-20 v-20 h-10 c-25 0 -45 -20 -45 -45 s20 -45 45 -45 z"/>
+      <path d="M470 340 c0 -20 16 -36 36 -36 s36 16 36 36 s-16 36 -36 36 h-8 v16 h-16 v-16 h-8 c-20 0 -36 -16 -36 -36 s16 -36 36 -36 z" opacity="0.8"/>
+      <path d="M560 310 c0 -16 13 -29 29 -29 s29 13 29 29 s-13 29 -29 29 h-6 v13 h-13 v-13 h-6 c-16 0 -29 -13 -29 -29 s13 -29 29 -29 z" opacity="0.6"/>
+    </g>
+  </g>
+
+  <text x="384" y="620" text-anchor="middle" font-family="Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial" font-size="96" font-weight="700" fill="url(#textGrad)">Texas Arena</text>
+</svg>
+
