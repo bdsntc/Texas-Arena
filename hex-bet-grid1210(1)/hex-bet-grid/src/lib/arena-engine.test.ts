@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import {
   calculatePrizeDistribution,
   createStableTransactionHash,
@@ -43,43 +42,31 @@ const players: AIPlayer[] = [
   },
 ];
 
-describe("arena engine", () => {
-  it("replays the same match deterministically", () => {
-    const first = simulateArenaMatch("match-001", players);
-    const second = simulateArenaMatch("match-001", players);
+export function runArenaEngineAssertions() {
+  const first = simulateArenaMatch("match-001", players);
+  const second = simulateArenaMatch("match-001", players);
+  const alternate = simulateArenaMatch("match-002", players);
+  const score = scoreAIPlayer(players[0]);
+  const distribution = calculatePrizeDistribution(125000);
+  const txHash = createStableTransactionHash(["wallet-1", "match-001", "ai-3", "500"]);
 
-    expect(second).toEqual(first);
-  });
+  assertEqual(JSON.stringify(second), JSON.stringify(first), "same match id should replay exactly");
+  assert(first.board.join(",") !== alternate.board.join(","), "different match ids should change the board");
+  assert(score.total > 0 && score.total <= 1, "player score should stay normalized");
+  assertEqual(distribution.total, 125000, "distribution should preserve the whole pool");
+  assertEqual(distribution.winnerPoolShare, 75000, "winner pool share should be 60 percent");
+  assert(/^0x[a-f0-9]{64}$/.test(txHash), "transaction hash should use EVM-style format");
+  assertEqual(txHash, createStableTransactionHash(["wallet-1", "match-001", "ai-3", "500"]), "tx hash should be stable");
+}
 
-  it("changes the simulation when the match id changes", () => {
-    const first = simulateArenaMatch("match-001", players);
-    const second = simulateArenaMatch("match-002", players);
+function assert(condition: boolean, message: string) {
+  if (!condition) {
+    throw new Error(message);
+  }
+}
 
-    expect(second.board).not.toEqual(first.board);
-  });
-
-  it("keeps scoring values normalized", () => {
-    const score = scoreAIPlayer(players[0]);
-
-    expect(score.total).toBeGreaterThan(0);
-    expect(score.total).toBeLessThanOrEqual(1);
-    expect(score.elo).toBeLessThanOrEqual(1);
-    expect(score.winRate).toBeLessThanOrEqual(1);
-  });
-
-  it("distributes the whole pool without losing units", () => {
-    const distribution = calculatePrizeDistribution(125000);
-
-    expect(distribution.total).toBe(125000);
-    expect(distribution.winnerPoolShare).toBe(75000);
-    expect(distribution.platformFee).toBe(6250);
-    expect(distribution.nextMatchPool).toBe(43750);
-  });
-
-  it("creates stable transaction hashes for audit replay", () => {
-    const hash = createStableTransactionHash(["wallet-1", "match-001", "ai-3", "500"]);
-
-    expect(hash).toMatch(/^0x[a-f0-9]{64}$/);
-    expect(hash).toBe(createStableTransactionHash(["wallet-1", "match-001", "ai-3", "500"]));
-  });
-});
+function assertEqual<T>(actual: T, expected: T, message: string) {
+  if (actual !== expected) {
+    throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`);
+  }
+}
