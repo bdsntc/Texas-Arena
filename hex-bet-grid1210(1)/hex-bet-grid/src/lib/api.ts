@@ -1,4 +1,11 @@
-// Mock API functions for AI Texas Hold'em betting platform
+// Frontend data boundary for the AI Texas Hold'em betting platform.
+// The mock layer is deterministic so reviewers can replay the same match id.
+
+import {
+  createStableTransactionHash,
+  hashSeed,
+  simulateArenaMatch,
+} from "@/lib/arena-engine";
 
 export interface AIPlayer {
   id: string;
@@ -42,7 +49,6 @@ export interface UserStats {
   bettingHistory: Bet[];
 }
 
-// Mock data
 const mockAIPlayers: AIPlayer[] = [
   {
     id: 'ai-1',
@@ -112,20 +118,30 @@ const mockAIPlayers: AIPlayer[] = [
   },
 ];
 
-// Simulate network delay
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Derive decimal odds from win rate: higher win rate → lower odds
 const computeOdds = (winRate: number) => {
   const p = Math.max(0.05, Math.min(0.95, winRate / 100));
-  const houseMargin = 0.05; // 5% margin
+  const houseMargin = 0.05;
   const o = (1 / p) * (1 + houseMargin);
   return Number(o.toFixed(2));
 };
 
+const withComputedOdds = (player: AIPlayer): AIPlayer => ({
+  ...player,
+  odds: computeOdds(player.winRate),
+});
+
+const getPlayersForEngine = () => mockAIPlayers.map(withComputedOdds);
+
+const getDeterministicPrizePool = (matchId = 'match-001') => {
+  const seed = hashSeed(`${matchId}:prize-pool`);
+  return 125000 + (seed % 10000);
+};
+
 export const getAIList = async (): Promise<AIPlayer[]> => {
   await delay(500);
-  return mockAIPlayers.map(p => ({ ...p, odds: computeOdds(p.winRate) }));
+  return getPlayersForEngine();
 };
 
 export const getOdds = async (aiId: string): Promise<number> => {
@@ -136,13 +152,14 @@ export const getOdds = async (aiId: string): Promise<number> => {
 
 export const getPrizePool = async (): Promise<number> => {
   await delay(300);
-  return 125000 + Math.random() * 10000;
+  return getDeterministicPrizePool();
 };
 
 export const sendBet = async (matchId: string, aiId: string, amount: number): Promise<Bet> => {
   await delay(800);
+  const id = createStableTransactionHash([matchId, aiId, String(amount)]).slice(0, 18);
   return {
-    id: `bet-${Date.now()}`,
+    id: `bet-${id}`,
     matchId,
     aiId,
     amount,
@@ -153,31 +170,36 @@ export const sendBet = async (matchId: string, aiId: string, amount: number): Pr
 
 export const getMatchState = async (matchId: string): Promise<Match> => {
   await delay(400);
+  const players = getPlayersForEngine();
+  const simulation = simulateArenaMatch(matchId, players.slice(0, 6));
   return {
     id: matchId,
     status: 'live',
-    players: mockAIPlayers.slice(0, 6),
-    prizePool: 125000,
-    currentPot: 45000,
+    players: players.slice(0, 6),
+    prizePool: getDeterministicPrizePool(matchId),
+    currentPot: 45000 + (simulation.seed % 7000),
     stage: 'flop',
-    communityCards: ['A♠', 'K♥', '7♦'],
-    startTime: new Date(),
+    communityCards: simulation.board.slice(0, 3).map(toDisplayCard),
+    startTime: new Date('2026-01-01T00:00:00Z'),
   };
 };
 
 export const getMatchResult = async (matchId: string): Promise<Match> => {
   await delay(600);
-  const winner = mockAIPlayers[Math.floor(Math.random() * mockAIPlayers.length)];
+  const players = getPlayersForEngine();
+  const simulation = simulateArenaMatch(matchId, players.slice(0, 6));
+  const prizePool = getDeterministicPrizePool(matchId);
+
   return {
     id: matchId,
     status: 'completed',
-    players: mockAIPlayers.slice(0, 6),
-    prizePool: 125000,
-    currentPot: 125000,
+    players: players.slice(0, 6),
+    prizePool,
+    currentPot: prizePool,
     stage: 'showdown',
-    communityCards: ['A♠', 'K♥', '7♦', 'Q♣', '2♠'],
-    startTime: new Date(Date.now() - 3600000),
-    winnerId: winner.id,
+    communityCards: simulation.board.map(toDisplayCard),
+    startTime: new Date('2026-01-01T00:00:00Z'),
+    winnerId: simulation.winnerId,
   };
 };
 
@@ -192,18 +214,23 @@ export const getUserStats = async (): Promise<UserStats> => {
   };
 };
 
-// x402 Protocol mock
 export const sendX402Transaction = async (amount: number): Promise<{ status: 'pending' | 'confirmed' | 'failed', txHash: string }> => {
-  await delay(1500);
-  // Simulate x402 endpoint call
-  const mockResponse = await fetch("https://x402-endpoint.mock/send", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ amount }),
-  }).catch(() => null);
-  
+  await delay(1200);
+
   return {
-    status: Math.random() > 0.1 ? 'confirmed' : 'failed',
-    txHash: `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`,
+    status: 'confirmed',
+    txHash: createStableTransactionHash(['x402-demo', String(amount)]),
   };
 };
+
+function toDisplayCard(card: string) {
+  const suitMap: Record<string, string> = {
+    S: '♠',
+    H: '♥',
+    D: '♦',
+    C: '♣',
+  };
+  const rank = card.slice(0, -1);
+  const suit = card.slice(-1);
+  return `${rank}${suitMap[suit] ?? suit}`;
+}

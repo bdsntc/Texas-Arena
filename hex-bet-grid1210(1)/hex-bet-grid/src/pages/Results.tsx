@@ -6,10 +6,19 @@ import { NeonCard } from "@/components/ui/neon-card";
 import { AICard } from "@/components/ui/ai-card";
 import { AnimatedNumber } from "@/components/ui/animated-number";
 import { getMatchResult, getAIList, type AIPlayer, type Match } from "@/lib/api";
+import { calculatePrizeDistribution, createStableTransactionHash } from "@/lib/arena-engine";
 import { useRoundPrize } from "@/hooks/useRoundPrize";
 import { useMatchStore } from "@/store/bettingStore";
 import { cn } from "@/lib/utils";
-import { Trophy, ArrowRight, RotateCcw, Sparkles, Award } from "lucide-react";
+import { Trophy, ArrowRight, RotateCcw, Award } from "lucide-react";
+
+const settlementWallets = [
+  "9xQeWvG816bUx9EPjHmaT23yvVM2ZWdb3u9WEx13a1p",
+  "7sXbN9WcM8pQ2KzY4dVaR1hE6tLmF5jU3qPoC0aB2nG",
+  "3LhKp8YqV5mT1nB7zXcR4aE9uS6wD2fG0jNbM3pQeA",
+];
+
+const shorten = (addr: string) => `${addr.slice(0, 4)}...${addr.slice(-4)}`;
 
 export default function Results() {
   const [matchResult, setMatchResult] = useState<Match | null>(null);
@@ -32,31 +41,23 @@ export default function Results() {
   }, []);
 
   const winner = players.find(p => p.id === matchResult?.winnerId);
-
-  // Dynamic distribution based on synchronized round prize (dollars)
+  const prizeDistribution = calculatePrizeDistribution(roundPrize);
   const distribution = [
-    { label: 'Winner Pool Share', percentage: 60 },
-    { label: 'Platform Fee', percentage: 5 },
-    { label: 'Next Match Pool', percentage: 35 },
-  ].map((item) => ({
-    ...item,
-    amountDollar: Math.round((roundPrize * item.percentage) ) / 100, // keep 2 decimals implicitly by AnimatedNumber or format below
-  }));
-
-  const base58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-  const randomSolAddress = (len = 44) => {
-    const arr = new Uint8Array(len);
-    crypto.getRandomValues(arr);
-    let s = '';
-    for (let i = 0; i < len; i++) s += base58[arr[i] % base58.length];
-    return s;
-  };
-  const shorten = (addr: string) => `${addr.slice(0, 4)}...${addr.slice(-4)}`;
-  const topBetters = [
-    { address: shorten(randomSolAddress()), bet: 5000, payout: 10500 },
-    { address: shorten(randomSolAddress()), bet: 3000, payout: 6300 },
-    { address: shorten(randomSolAddress()), bet: 2500, payout: 5250 },
+    { label: 'Winner Pool Share', percentage: 60, amount: prizeDistribution.winnerPoolShare },
+    { label: 'Platform Fee', percentage: 5, amount: prizeDistribution.platformFee },
+    { label: 'Next Match Pool', percentage: 35, amount: prizeDistribution.nextMatchPool },
   ];
+
+  const topBetters = settlementWallets.map((address, index) => {
+    const bet = [5000, 3000, 2500][index];
+    const payout = Math.round((prizeDistribution.winnerPoolShare * bet) / 10500);
+    return {
+      address: shorten(address),
+      bet,
+      payout,
+      txHash: createStableTransactionHash([matchResult?.id ?? 'match-001', address, String(bet)]),
+    };
+  });
 
   if (loading) {
     return (
@@ -71,7 +72,6 @@ export default function Results() {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
-        {/* Winner Announcement */}
         <div className="text-center mb-12 animate-fade-in">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/20 text-accent mb-6">
             <Trophy className="w-5 h-5" />
@@ -81,17 +81,14 @@ export default function Results() {
           <h1 className="font-display text-4xl md:text-6xl font-bold text-foreground mb-4">
             Winner: <span className="text-primary neon-text animate-glow">{winner?.name}</span>
           </h1>
-          
         </div>
 
         <div className="grid lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
-          {/* Winner Card */}
           <div className="animate-slide-up">
             {winner && (
               <AICard ai={winner} isWinner />
             )}
             
-            {/* Total Prize */}
             <NeonCard variant="highlight" className="mt-6 text-center">
               <div className="text-sm text-muted-foreground uppercase mb-2">Total Prize Pool</div>
               <AnimatedNumber 
@@ -102,9 +99,7 @@ export default function Results() {
             </NeonCard>
           </div>
 
-          {/* Distribution */}
           <div className="space-y-6 animate-slide-up" style={{ animationDelay: '100ms' }}>
-            {/* Prize Distribution */}
             <NeonCard>
               <h3 className="font-display font-bold text-foreground mb-4 flex items-center gap-2">
                 <Award className="w-5 h-5 text-primary" />
@@ -117,7 +112,7 @@ export default function Results() {
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">{item.label}</span>
                       <span className="text-foreground font-medium">
-                        ${((roundPrize * item.percentage) / 100).toLocaleString()} ({item.percentage}%)
+                        ${item.amount.toLocaleString()} ({item.percentage}%)
                       </span>
                     </div>
                     <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -139,13 +134,12 @@ export default function Results() {
               </div>
             </NeonCard>
 
-            {/* Top Winners */}
             <NeonCard>
               <h3 className="font-display font-bold text-foreground mb-4">Top Winners</h3>
               <div className="space-y-3">
                 {topBetters.map((better, i) => (
                   <div 
-                    key={better.address}
+                    key={better.txHash}
                     className={cn(
                       "flex items-center justify-between p-3 rounded-lg",
                       i === 0 && "bg-accent/10 border border-accent/30",
@@ -160,11 +154,16 @@ export default function Results() {
                       )}>
                         {i + 1}
                       </div>
-                      <span className="font-mono text-sm text-foreground">{better.address}</span>
+                      <div>
+                        <span className="font-mono text-sm text-foreground">{better.address}</span>
+                        <div className="font-mono text-xs text-muted-foreground">
+                          {better.txHash.slice(0, 10)}...{better.txHash.slice(-6)}
+                        </div>
+                      </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-xs text-muted-foreground">Bet: ${(better.bet / 100).toLocaleString()}</div>
-                      <div className="text-primary font-bold">+{(better.payout / 100).toLocaleString()}</div>
+                      <div className="text-xs text-muted-foreground">Bet: ${better.bet.toLocaleString()}</div>
+                      <div className="text-primary font-bold">+${better.payout.toLocaleString()}</div>
                     </div>
                   </div>
                 ))}
@@ -173,7 +172,6 @@ export default function Results() {
           </div>
         </div>
 
-        {/* Actions */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-12">
           <Link to="/lobby">
             <Button variant="hero" size="lg" className="gap-2">
