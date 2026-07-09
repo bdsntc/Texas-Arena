@@ -1,125 +1,86 @@
 # Texas Arena
 
-**Texas Arena** is a Web3-native AI competition platform where autonomous AI agents compete in Texas Hold’em matches, and users can bet on the winning AI using the x402 protocol.
+Texas Arena is a Web3-style AI Texas Hold'em arena. Users study six AI players, place a prediction before the round locks, watch a deterministic match simulation, and review the settlement breakdown after showdown.
 
-Instead of betting on human players, Texas Arena introduces a new primitive:
-**betting on intelligence.**
+The project is frontend-first, but the domain layer is designed so a reviewer can replay the same match from the same `matchId` and receive the same deck, board, winner, score breakdown, and settlement math.
 
-Users place bets on AI agents, AI agents compete in point-based Texas Hold’em matches, and winners share the prize pool proportionally.
+## What Is Original Here
 
----
+- A deterministic Texas Hold'em arena engine seeded by `matchId`.
+- AI scoring based on ELO, win rate, recent form, style risk, odds value, and card strength.
+- Reproducible prize distribution with winner share, platform fee, and next-match rollover.
+- Wallet-aware betting flow with stable mock transaction hashes for audit replay.
+- Live match UI showing table state, player stacks, community cards, decision log, and leaderboard.
 
-## 🎯 What is Texas Arena?
+The repository uses shadcn/Radix UI primitives for base interface components. The application-specific work lives in the arena logic, betting flow, wallet integration, state model, and page composition.
 
-Texas Arena is an AI-versus-AI Texas Hold’em arena with a decentralized betting mechanism.
+## Key Source Map
 
-- Multiple AI agents compete in the same match
-- Matches are scored using a transparent point system
-- Users bet on which AI will win
-- All bets form a shared prize pool
-- Winning bettors split the pool proportionally
-- Payments are handled using the x402 protocol
+```text
+hex-bet-grid1210(1)/hex-bet-grid/src/lib/arena-engine.ts       Deterministic match, scoring, deck, prize, tx helpers
+hex-bet-grid1210(1)/hex-bet-grid/src/lib/holdem.ts             Live table simulator used by the match page
+hex-bet-grid1210(1)/hex-bet-grid/src/lib/api.ts                Frontend data boundary and betting/match APIs
+hex-bet-grid1210(1)/hex-bet-grid/src/hooks/useWallet.ts        Wallet connection and transaction state
+hex-bet-grid1210(1)/hex-bet-grid/src/store/bettingStore.ts     Betting and match lifecycle state
+hex-bet-grid1210(1)/hex-bet-grid/src/pages/Lobby.tsx           AI selection, wallet gate, stake confirmation
+hex-bet-grid1210(1)/hex-bet-grid/src/pages/Match.tsx           Live arena table and AI decision log
+hex-bet-grid1210(1)/hex-bet-grid/src/pages/Results.tsx         Winner and settlement breakdown
+```
 
-This project is designed to showcase **AI competition, transparent game logic, and on-chain-native betting UX**.
+## Product Flow
 
----
+1. A new AI poker match is announced in the lobby.
+2. Users compare AI stats, odds, recent form, and style.
+3. A wallet connection gates the betting action.
+4. Bets lock when the match starts.
+5. The match page renders the poker table, player stacks, community cards, and AI decisions.
+6. The result page shows the winner and deterministic prize distribution.
 
-## 🧠 Core Concepts
+## Deterministic Review Flow
 
-### AI-Driven Competition
-- Each player is an autonomous AI agent
-- Agents use different strategies and decision models
-- No human input during matches
+1. Start from a known match id, for example `match-001`.
+2. The arena engine hashes that id into a seed.
+3. The seed shuffles the deck and assigns hole cards.
+4. Each AI receives a transparent score breakdown.
+5. The highest final score wins the match.
+6. Settlement math distributes the full prize pool without remainder loss.
 
-### x402 Betting Model
-- Bets are placed using the HTTP-native `402 Payment Required` flow
-- No accounts or subscriptions
-- Pay-per-match, pay-per-round
+This makes demos repeatable and gives reviewers a concrete audit surface beyond visual UI components.
 
-### Shared Prize Pool
-- All bets go into one pool
-- Users who bet on the winning AI share the pool
-- Payout is proportional to bet size
-
-### Frontend-First Design
-- No backend required for the demo
-- All logic and flows are visualized in the UI
-- Ideal for demos, hackathons, and early validation
-
----
-
-## 🏟️ How It Works
-
-1. A new Texas Hold’em match is announced
-2. Multiple AI agents enter the arena
-3. Users place bets on the AI they believe will win
-4. Betting is locked when the match starts
-5. AI agents play Texas Hold’em hands autonomously
-6. Points are accumulated across rounds
-7. The top AI wins the match
-8. The prize pool is distributed to winning bettors
-
----
-
-## 🖥️ Application Pages
-
-- **Landing**  
-  Introduction to AI-based Texas Hold’em betting
-
-- **Lobby**  
-  List of upcoming and live matches  
-  AI agents, odds, and prize pools
-
-- **Match Arena**  
-  Live Texas Hold’em visualization  
-  AI decision logs and point tracking
-
-- **Betting Panel**  
-  Select AI, place bets, and track pool size
-
-- **Results**  
-  Match winner, score breakdown, and payouts
-
-- **Dashboard**  
-  Wallet (mock), betting history, earnings
-
----
-
-## ✨ Features
-
-- AI vs AI Texas Hold’em matches
-- Real-time prize pool updates
-- Point-based scoring system
-- x402-based betting flow (mocked)
-- Live match visualization
-- Winner highlight and payout breakdown
-- Dark, professional Web3 UI
-
----
-
-## 🛠️ Tech Stack
-
-- Vite
-- React
-- TypeScript
-- Tailwind CSS
-- shadcn/ui
-
-This repository focuses on the **frontend experience**.  
-All AI logic, blockchain interactions, and payments are mocked for UI and product validation.
-
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-- Node.js (recommended via nvm)
-- npm
-
-### Run Locally
+## Local Development
 
 ```sh
-git clone <YOUR_GIT_URL>
-cd texas-arena
+cd "hex-bet-grid1210(1)/hex-bet-grid"
 npm install
 npm run dev
+```
+
+## Quality Checks
+
+```sh
+npm run lint
+npm run typecheck
+npm run test
+npm run build
+```
+
+Or run the combined gate:
+
+```sh
+npm run quality
+```
+
+## Mocked Boundaries
+
+This version keeps blockchain and payment interactions mocked so the product can be reviewed without private keys or deployed contracts. Mocking is explicit:
+
+- Wallet detection uses browser wallet providers when available.
+- Transaction hashes are deterministic placeholders in review mode.
+- x402 payment behavior is represented as a frontend flow, not a production payment gateway.
+
+## Security And Fairness Notes
+
+- Match randomness should be moved to a verifiable randomness source before handling real funds.
+- Server-side settlement must verify wallet ownership, bet lock time, and prize distribution.
+- Production x402 integration should replace all mock payment code.
+- The deterministic engine is for demo auditability and regression testing, not real-money randomness.
